@@ -9,3 +9,6 @@ uploads/
 *.docx
 .DS_Store
 .claude/
+dist/
+build/
+*.spec
