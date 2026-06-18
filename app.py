@@ -1,7 +1,7 @@
 import os
 import sys
 import threading
-import webbrowser
+import webview
 from flask import Flask, render_template, request, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 from analyzer.extractor import extract_text
@@ -9,13 +9,15 @@ from analyzer.ats_scorer import score_cv
 from analyzer.matcher import match_job
 from analyzer.suggestions import generate_suggestions
 
-# When frozen by PyInstaller, resolve paths relative to the exe
+
 def resource_path(relative: str) -> str:
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, relative)
 
+
 UPLOAD_FOLDER = os.path.join(os.path.expanduser("~"), ".cv-analyzer-uploads")
 ALLOWED_EXTENSIONS = {"pdf", "docx"}
+PORT = 5000
 
 app = Flask(
     __name__,
@@ -82,9 +84,24 @@ def analyze():
             os.remove(filepath)
 
 
+def start_flask():
+    app.run(host="127.0.0.1", port=PORT, debug=False, use_reloader=False)
+
+
 if __name__ == "__main__":
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    port = 5000
-    # Open browser after a short delay so Flask is ready
-    threading.Timer(1.2, lambda: webbrowser.open(f"http://127.0.0.1:{port}")).start()
-    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False)
+
+    # Start Flask in background thread
+    t = threading.Thread(target=start_flask, daemon=True)
+    t.start()
+
+    # Open native window (no browser)
+    webview.create_window(
+        title="AI CV Analyzer",
+        url=f"http://127.0.0.1:{PORT}",
+        width=900,
+        height=750,
+        min_size=(700, 600),
+        resizable=True,
+    )
+    webview.start()
